@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pic2Chart - Smart Document to Diagram SaaS</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    /* Modern CSS Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #2563eb;
+      --secondary: #3b82f6;
+      --accent: #7c3aed;
+      --background: #f8fafc;
+      --text: #1e293b;
+      --card-bg: #ffffff;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Modern Header */
+    .header {
+      background: var(--card-bg);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 1rem 2rem;
+    }
+
+    .nav {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+      transition: transform 0.2s ease;
+    }
+
+    .brand:hover {
+      transform: scale(1.02);
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      opacity: 0.9;
+    }
+
+    /* Main Container */
+    .main-container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Upload Card */
+    .upload-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+      margin-bottom: 2rem;
+    }
+
+    .upload-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.03);
+    }
+
+    #image-preview {
+      max-width: 200px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin: 1rem 0;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 1rem;
+      z-index: 100;
+    }
+
+    .toolbar button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: var(--background);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toolbar button:hover {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .toolbar select, .toolbar input[type="color"] {
+      padding: 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: var(--card-bg);
+    }
+
+    /* Canvas Area */
+    .canvas-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      margin: 2rem 0;
+    }
+
+    #canvas {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+    }
+
+    /* OCR Output */
+    .ocr-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .text-node {
+      padding: 1rem;
+      margin: 0.5rem 0;
+      background: var(--background);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .text-node:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateX(4px);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(37, 99, 235, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .toolbar {
+        top: 0;
+        border-radius: 0;
+        margin: 0 -2rem;
+        padding: 1rem;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+    }
+    /* Instructions Card */
+.instructions-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.instructions-card ol {
+  padding-left: 1.5rem;
+  margin-top: 1rem;
+}
+
+.instructions-card li {
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+}
+
+/* Beta Modal */
+.beta-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.beta-content {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 500px;
+  text-align: center;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.beta-content button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.beta-content button:hover {
+  transform: scale(1.05);
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Footer */
+.site-footer {
+  background: var(--text);
+  color: white;
+  padding: 2rem;
+  margin-top: 4rem;
+}
+
+.footer-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-info {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav">
+      <a href="#" class="brand">Pic2Chart</a>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <section class="upload-card fade-in">
+      <div class="upload-area" onclick="document.getElementById('image-upload').click()">
+        <i data-feather="upload-cloud" class="icon-lg"></i>
+        <h3>Drop document here or click to upload</h3>
+        <p>Supports JPG, PNG, PDF</p>
+        <img id="image-preview" class="fade-in" alt="Preview">
+        <div id="loading-indicator" style="display:none;">
+          <span class="spinner"></span>
+          <p>Processing document...</p>
+        </div>
+      </div>
+      <input type="file" id="image-upload" accept="image/*" hidden>
+    </section>
+
+    <section class="instructions-card fade-in">
+      <h3>To use in PowerPoint:</h3>
+      <ol>
+        <li>Export as SVG.</li>
+        <li>Insert &gt; Picture &gt; This Device, select SVG.</li>
+        <li>Right-click &gt; Convert to Shape.</li>
+        <li>Ungroup to edit elements.</li>
+      </ol>
+    </section>
+
+    <div class="toolbar fade-in">
+      <button id="generate-diagram" disabled><i data-feather="zap"></i> Auto Diagram</button>
+      <select id="shape-picker"><option value="rect">Rectangle</option><option value="circle">Circle</option></select>
+      <input type="color" id="color-picker" value="#e3f2fd">
+      <button id="add-text"><i data-feather="type"></i> Text</button>      
+      <button id="clear-canvas"><i data-feather="trash-2"></i> Clear All</button>
+      <button id="manual-toggle"><i data-feather="edit"></i> Manual Mode</button>
+      <button id="zoom-in"><i data-feather="zoom-in"></i></button>
+      <button id="zoom-out"><i data-feather="zoom-out"></i></button>
+      <button id="delete-selected"><i data-feather="trash"></i></button>
+      <button id="export-svg"><i data-feather="download"></i> SVG</button>
+      <button id="export-img"><i data-feather="image"></i> PNG</button>
+    </div>
+
+    <section class="ocr-section fade-in">
+      <h2 class="section-title">Detected Text</h2>
+      <div id="ocr-output" class="text-nodes"></div>
+    </section>
+
+    <section class="canvas-container fade-in">
+      <canvas id="canvas"></canvas>
+    </section>
+
+  </main>
+
+  <div class="beta-modal" id="betaModal">
+  <div class="beta-content">
+    <h3>🎉 Welcome to Pic2Chart Beta!</h3>
+    <p>Thank you for trying our early version. Please note:</p>
+    <ul>
+      <li>Still in active development</li>
+      <li>Features may change</li>
+      <li>Report issues to mohamed.h.abdalgader@gmail.com</li>
+    </ul>
+    <button onclick="closeBetaModal()">Get Started</button>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-content">
+    <p>&copy; 2025 Pic2Chart. All rights reserved.</p>
+    <div class="footer-info">
+      <span>Developed by <a href="https://www.modhtom.com" target="_blank" style="color: white;">MODHTOM</a></span>
+      <span>Contact: <a href="mailto:mohamed.h.abdalgader@gmail.com" style="color: white;">mohamed.h.abdalgader@gmail.com</a></span>
+      <span>v1.0.0-beta</span>
+    </div>
+  </div>
+</footer>
+  <script>
+    feather.replace();
+    // Beta modal logic
+    function closeBetaModal() {
+      document.getElementById('betaModal').style.display = 'none';
+      localStorage.setItem('betaModalShown', 'true');
+    }
+
+    // Show modal only on first visit
+    window.addEventListener('load', () => {
+      if (!localStorage.getItem('betaModalShown')) {
+        document.getElementById('betaModal').style.display = 'flex';
+      } else {
+        document.getElementById('betaModal').style.display = 'none';
+      }
+    });
+    const API_KEY = 'helloworld';
+    const API_URL = 'https://api.ocr.space/parse/image';
+    let canvas, extractedLines = [];
+    let manualMode = false, textMode = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Hover effects for buttons
+      document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('mouseover', () => {
+          btn.style.transform = 'translateY(-1px)';
+        });
+        btn.addEventListener('mouseout', () => {
+          btn.style.transform = 'none';
+        });
+      });
+
+      // Fade-in animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('fade-in');
+          }
+        });
+      });
+
+      document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    
+      // init canvas
+      canvas = new fabric.Canvas('canvas', { backgroundColor: '#fff', selection: true });
+      canvas.setWidth(1200); canvas.setHeight(800);
+      canvas.on('mouse:down', onCanvasClick);
+
+      feather.replace();
+      fabric.Object.prototype.originX = fabric.Object.prototype.originX || 'center';
+      fabric.Object.prototype.originY = fabric.Object.prototype.originY || 'center';
+
+      // debounce upload
+      const input = document.getElementById('image-upload');
+      input.addEventListener('change', debounce(handleImageUpload, 700));
+
+      document.getElementById('generate-diagram').addEventListener('click', autoDiagram);
+      document.getElementById('add-text').addEventListener('click', () => textMode = true);
+      document.getElementById('manual-toggle').addEventListener('click', () => manualMode = !manualMode);
+      document.getElementById('zoom-in').addEventListener('click', () => canvas.setZoom(canvas.getZoom() * 1.1));
+      document.getElementById('zoom-out').addEventListener('click', () => canvas.setZoom(canvas.getZoom() / 1.1));
+      document.getElementById('delete-selected').addEventListener('click', () => canvas.getActiveObject() && canvas.remove(canvas.getActiveObject()));
+      document.getElementById('clear-canvas').addEventListener('click', () => canvas.clear());
+      document.getElementById('export-svg').addEventListener('click', exportToSVG);
+      document.getElementById('export-img').addEventListener('click', exportToImage);
+    });
+
+    function debounce(fn, wait = 500) {
+      let timer;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), wait);
+      };
+    }
+
+    async function handleImageUpload(e) {
+      const file = e.target.files[0]; if (!file) return;
+      document.getElementById('loading-indicator').style.display = 'inline-block';
+      const preview = document.getElementById('image-preview');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'inline';
+      try {
+        const raw = await extractText(file);
+        extractedLines = processText(raw);
+        renderOCRList(extractedLines);
+        document.getElementById('generate-diagram').disabled = !extractedLines.length;
+      } catch (e) { alert('OCR error: ' + e.message); }
+      document.getElementById('loading-indicator').style.display = 'none';
+    }
+
+    function onCanvasClick(opt) {
+      const { x, y } = canvas.getPointer(opt.e);
+      if (textMode) { addIText(x, y); textMode = false; return; }
+      if (manualMode) { addShape(prompt('Text:'), x, y); manualMode = false; }
+    }
+
+async function extractText(file) {
+  const apiUrl = 'https://api.ocr.space/parse/image';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('language', 'eng');
+  fd.append('OCREngine', '2');
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': API_KEY,
+        'X-Requested-With': 'XMLHttpRequest' 
+      },
+      body: fd
+    });
+
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const json = await res.json();
+    return json.ParsedResults?.[0]?.ParsedText || '';
+  } catch (error) {
+    console.error('OCR Failed:', error);
+    alert(`OCR Error: ${error.message}`);
+    return '';
+  }
+}
+    
+    function processText(txt) { return txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean); }
+
+    function renderOCRList(lines) {
+      const out = document.getElementById('ocr-output'); out.innerHTML = '';
+      lines.forEach(t => {
+        const div = document.createElement('div'); div.className='text-node'; div.textContent = t;
+        div.onclick = () => addShape(t); out.appendChild(div);
+      });
+    }
+
+    function autoDiagram() {
+      canvas.clear();
+      extractedLines.forEach((t, i) => addShape(t, 150 + (i%4)*300, 150 + Math.floor(i/4)*200));
+    }
+
+    function addIText(x, y) {
+      const txt = new fabric.IText(prompt('Text:'), { left: x, top: y, fontSize: 16 });
+      canvas.add(txt);
+    }
+
+    function addShape(text, x = 100, y = 100) {
+      if (!text) return;
+
+      const txt = new fabric.Textbox(text, {
+        fontSize: 14,
+        textAlign: 'center',
+        originX: 'center',
+        originY: 'center'
+      });
+
+      const MIN_WIDTH = 80;
+      const MIN_HEIGHT = 40;
+      const PADDING = 16;
+
+      const width = Math.max(txt.width + PADDING, MIN_WIDTH);
+      const height = Math.max(txt.height + PADDING, MIN_HEIGHT);
+
+      const left = x - width / 2;
+      const top = y - height / 2;
+      const fill = document.getElementById('color-picker').value;
+      let shape;
+
+      if (document.getElementById('shape-picker').value === 'rect') {
+        shape = new fabric.Rect({
+          left,
+          top,
+          width,
+          height,
+          fill,
+          stroke: '#666',
+          strokeWidth: 1,
+          rx: 6
+        });
+      } else {
+        const radius = Math.max(width, height) / 2;
+        shape = new fabric.Circle({
+          left: x - radius,
+          top: y - radius,
+          radius,
+          fill,
+          stroke: '#666',
+          strokeWidth: 1
+        });
+      }
+
+      txt.set({ left: x, top: y });
+
+      const group = new fabric.Group([shape, txt], { selectable: true });
+      canvas.add(group);
+    }
+
+    function exportToSVG() {
+      const svg = canvas.toSVG({ suppressPreamble:true });
+      downloadURL(new Blob([svg],{type:'image/svg+xml'}), 'diagram.svg');
+    }
+    function exportToImage() {
+      const png = canvas.toDataURL({ format:'png', multiplier:2 });
+      downloadURL(png, 'diagram.png');
+    }
+    function downloadURL(data, name) {
+      const link = document.createElement('a');
+      if (data instanceof Blob) link.href = URL.createObjectURL(data);
+      else link.href = data;
+      link.download = name; document.body.appendChild(link); link.click(); link.remove();
+    }
+  </script>
+</body>
+</html>
